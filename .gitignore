@@ -1,0 +1,59 @@
+# =============================================================================
+# .gitignore
+# Sistem Klasifikasi Taksonomi Bloom — Bloom System
+# File-file berikut TIDAK akan diunggah ke GitHub
+# =============================================================================
+
+# -----------------------------------------------
+# KUNCI RAHASIA & KONFIGURASI SENSITIF
+# -----------------------------------------------
+.env
+.streamlit/secrets.toml
+
+# -----------------------------------------------
+# DATA PENGGUNA (SOAL UJIAN & HASIL)
+# File PDF, CSV, dan log tidak boleh ikut ke repo
+# -----------------------------------------------
+data/input/*
+data/output/*
+logs/*
+# Tapi biarkan placeholder .gitkeep tetap ada
+!data/input/.gitkeep
+!data/output/.gitkeep
+!logs/.gitkeep
+
+# -----------------------------------------------
+# PYTHON CACHE & ENVIRONMENT VIRTUAL
+# -----------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.venv/
+venv/
+env/
+
+# -----------------------------------------------
+# FILE SEMENTARA & TOOLS DEVELOPMENT
+# -----------------------------------------------
+test_pipeline.py
+requirements_saran.txt
+cek_import.py
+struktur.txt
+
+# -----------------------------------------------
+# EDITOR & OS
+# -----------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# -----------------------------------------------
+# PYTEST & COVERAGE
+# -----------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
