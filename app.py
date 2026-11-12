@@ -115,7 +115,7 @@ def hitung_statistik(df: pd.DataFrame) -> dict:
             "total": 0,
             "LOTS": empty, "MOTS": empty,
             "HOTS": empty, "ERROR": empty,
-            "gemini_count": 0, "ollama_count": 0,
+            "gemini_count": 0,
         }
     stats: dict = {"total": total}
     for kat in ["LOTS", "MOTS", "HOTS", "ERROR"]:
@@ -276,7 +276,7 @@ if analisis_clicked and uploaded_file is not None:
                 st.warning(f"  Batch {chunk_idx+1}: Seluruh rantai model Gemini gagal merespons.")
             
             # --- PROTEKSI HALUSINASI LLM & AKURASI ANOTASI ---
-            # Jika model (khususnya Ollama) menghapus/melewatkan soal, pad dengan ERROR
+            # Jika model melewatkan atau menghilangkan soal, pad dengan ERROR (proteksi halusinasi LLM)
             while len(batch_res) < len(chunk):
                 batch_res.append({
                     "kategori": "ERROR",
