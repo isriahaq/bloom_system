@@ -342,6 +342,10 @@ if analisis_clicked and uploaded_file is not None:
             st.warning(f"Anotasi PDF tidak berhasil: {e}")
             s3.update(label="Tahap 3/3 selesai (anotasi dilewati).", state="complete")
 
+    # Filter hanya butir soal yang sah untuk tabel dan ekspor CSV (eliminasi noise tabel/kop surat)
+    valid_evaluations = [r for r in evaluation_results if r.get("is_question", True)]
+    display_evaluations = valid_evaluations if valid_evaluations else evaluation_results
+
     # Simpan ke session state
     df_results = pd.DataFrame([
         {
@@ -354,7 +358,7 @@ if analisis_clicked and uploaded_file is not None:
             "Anomali Opsi": str(r.get("anomali_opsi", "Aman")).strip() if r.get("is_question", True) else "N/A",
             "Model": r.get("model_used", "—"),
         }
-        for idx, r in enumerate(evaluation_results)
+        for idx, r in enumerate(display_evaluations)
     ])
 
     end_time = time.time()

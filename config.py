@@ -60,15 +60,13 @@ GEMINI_MODELS: tuple[str, ...] = (
     "gemini-3.7-flash",    # Prioritas 1 — penalaran dan kuota tertinggi
     "gemini-3.6-flash",    # Prioritas 2 — fallback kaskade pertama
     "gemini-3.5-flash",    # Prioritas 3 — fallback kaskade kedua
-    "gemini-3.8-flash",    # Alternatif tambahan
-    "gemini-2.5-flash",    # Alternatif tambahan
 )
 
 # Model Gemini default (digunakan sebagai referensi konfigurasi utama)
 GEMINI_MODEL_NAME: str = GEMINI_MODELS[0]
 
 # Batas waktu tunggu respons dari API Gemini (dalam detik)
-GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "30"))
+GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "60"))
 
 # Jumlah maksimal percobaan ulang pada satu model Gemini sebelum kaskade ke model berikutnya
 GEMINI_MAX_RETRIES: int = int(os.getenv("GEMINI_MAX_RETRIES", "3"))

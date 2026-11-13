@@ -409,6 +409,9 @@ class PDFProcessor:
         questions: list[str] = []
         diabaikan: int = 0
 
+        # Deteksi apakah dokumen memiliki penomoran soal standar
+        has_numbered_questions = any(_RE_VALID_QUESTION_START.match(s.strip()) for s in raw_segments)
+
         for segment in raw_segments:
             cleaned_segment: str = segment.strip()
 
@@ -418,6 +421,15 @@ class PDFProcessor:
                 logger.debug(
                     f"Segmen diabaikan (terlalu pendek, {len(cleaned_segment)} karakter): "
                     f"'{cleaned_segment[:40]}'"
+                )
+                diabaikan += 1
+                continue
+
+            # Filter 1.1: Jika dokumen memiliki penomoran soal, abaikan segmen pembuka yang tidak diawali nomor soal
+            if has_numbered_questions and not _RE_VALID_QUESTION_START.match(cleaned_segment):
+                logger.debug(
+                    f"Segmen diabaikan (header/intro non-soal): "
+                    f"'{cleaned_segment[:40]}...'"
                 )
                 diabaikan += 1
                 continue

@@ -36,6 +36,7 @@ try:
     from config import (
         GEMINI_API_KEY,
         GEMINI_MODELS,
+        GEMINI_TIMEOUT,
         GEMINI_MAX_RETRIES,
     )
     from utils.logger import logger
@@ -46,7 +47,8 @@ except ImportError:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)  # type: ignore[assignment]
     GEMINI_API_KEY    = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_MODELS     = ("gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-2.5-flash")
+    GEMINI_MODELS     = ("gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash")
+    GEMINI_TIMEOUT    = int(os.getenv("GEMINI_TIMEOUT", "30"))
     GEMINI_MAX_RETRIES = 3
 
 
@@ -161,14 +163,17 @@ class CloudLLMRouter:
         self,
         gemini_api_key: str = GEMINI_API_KEY,
         gemini_max_retries: int = GEMINI_MAX_RETRIES,
+        gemini_timeout: int = GEMINI_TIMEOUT,
     ) -> None:
         self.gemini_max_retries = gemini_max_retries
+        self.gemini_timeout = gemini_timeout
         self._gemini_client: Optional[genai.Client] = None
         self._active_model: Optional[str] = None  # Untuk tracking model yang sedang aktif
 
         if gemini_api_key:
             try:
-                self._gemini_client = genai.Client(api_key=gemini_api_key)
+                http_opts = genai_types.HttpOptions(timeout=gemini_timeout * 1000)
+                self._gemini_client = genai.Client(api_key=gemini_api_key, http_options=http_opts)
                 logger.info("CloudLLMRouter: Klien Google GenAI berhasil terinisialisasi.")
             except Exception as e:
                 logger.error(f"CloudLLMRouter: Gagal memuat API Key ({e}).")
@@ -295,12 +300,12 @@ class CloudLLMRouter:
                         "connect", "timeout", "network", "getaddrinfo", "errno"
                     ))
 
-                    if is_rate_limited:
+                    if is_rate_limited or is_server_error:
                         logger.warning(
-                            f"[Gemini-Cascading] Rate Limit (429) pada {model_name}. "
-                            f"Memindahkan ke model berikutnya..."
+                            f"[Gemini-Cascading] Galat Layanan (Rate Limit 429 / Server 5xx) pada {model_name}. "
+                            f"Memindahkan langsung ke model berikutnya..."
                         )
-                        last_error = f"Rate Limit: {model_name}"
+                        last_error = f"Galat Layanan: {model_name} ({e})"
                         break  # Short-circuit: langsung ke model berikutnya
 
                     elif is_not_found:
@@ -311,10 +316,10 @@ class CloudLLMRouter:
                         last_error = f"Model tidak tersedia: {model_name}"
                         break  # Short-circuit: langsung ke model berikutnya
 
-                    elif is_server_error or is_connect_error:
+                    elif is_connect_error:
                         last_error = f"{type(e).__name__}: {e}"
                         logger.error(
-                            f"[Gemini-Cascading] Gangguan Server/Koneksi pada {model_name} "
+                            f"[Gemini-Cascading] Gangguan Koneksi/Timeout pada {model_name} "
                             f"(Percobaan {attempt}/{self.gemini_max_retries}): {last_error}"
                         )
                         if attempt < self.gemini_max_retries:
@@ -452,11 +457,8 @@ class CloudLLMRouter:
                 else None
             )
 
-            # Override: Jika question_text berisi teks soal nyata, anggap is_question=True.
-            # Teks PDF asli sudah di-inject dari app.py, jadi LLM tidak bisa
-            # menghilangkan soal hanya karena salah membaca konteks batch-nya.
-            if question_text and len(question_text.strip()) > 15:
-                is_question = True
+            # Pertahankan keputusan is_question dari LLM (noise filtering)
+            # Jika is_question bernilai False, segmen dianggap non-butir (tabel/kisi-kisi/kop)
 
             level = "N/A"
             kategori = "N/A"
