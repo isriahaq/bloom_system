@@ -102,6 +102,15 @@ _RE_PAGE_NUMBER: re.Pattern = re.compile(
     re.IGNORECASE,
 )
 
+# --- Regex 2b: Kop Dokumen / Running Header Berulang Tiap Halaman ---
+# Menghapus kop ujian sekolah yang menyusup ke tengah soal saat pergantian halaman PDF
+_RE_RUNNING_HEADER: re.Pattern = re.compile(
+    r"(?i)(?:Lembar\s+Soal\s*\n\s*)?Ujian\s+Berbasis\s+Komputer\s*\n\s*SMA\s+NEGERI\s+8\s+MALANG(?:\s*\n\s*Kode\s+Soal\s*:[^\n]+)?|"
+    r"Lembar\s+Soal\s*\n\s*Ujian\s+Berbasis\s+Komputer\s*\n\s*SMA\s+NEGERI\s+8\s+MALANG(?:\s*\n\s*Kode\s+Soal\s*:[^\n]+)?|"
+    r"Kode\s+Soal\s*:\s*\d{4}/\d{4}\.[^\n]+",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 # --- Regex 3: Karakter non-printable dan karakter aneh hasil OCR ---
 # Mempertahankan huruf Latin beraksent (é, ñ, ä, dst.) dan karakter whitespace normal.
 _RE_NON_PRINTABLE: re.Pattern = re.compile(
@@ -205,6 +214,27 @@ class PDFProcessor:
             f"PDFProcessor diinisialisasi "
             f"(min_q_len={min_question_length}, strip_lone_numbers={strip_lone_numbers})"
         )
+
+    # -------------------------------------------------------------------------
+    # METHOD 0: format_question_text
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def format_question_text(q_text: str) -> str:
+        """
+        Merapikan teks butir soal agar tidak patah-patah akibat batas margin PDF.
+        - Kalimat pertanyaan (stem) digabung menjadi paragraf mengalir yang rapi.
+        - Setiap opsi jawaban (A, B, C, D, E) diletakkan pada baris tersendiri.
+        - Residu kop / header sekolah dibersihkan secara tuntas.
+        """
+        cleaned = _RE_RUNNING_HEADER.sub("", q_text).strip()
+        opt_split = re.split(r"\n(?=[A-Ea-e][\.\)])", cleaned)
+        if len(opt_split) > 1:
+            stem = re.sub(r"\s*\n\s*", " ", opt_split[0]).strip()
+            options = [re.sub(r"\s*\n\s*", " ", opt).strip() for opt in opt_split[1:]]
+            return stem + "\n" + "\n".join(options)
+        else:
+            return re.sub(r"\s*\n\s*", " ", cleaned).strip()
 
     # -------------------------------------------------------------------------
     # METHOD 1: extract_raw_text
@@ -377,6 +407,9 @@ class PDFProcessor:
         # Menangani: "Halaman 1 dari 5", "Page 2 of 10", "- 3 -", dst.
         text = _RE_PAGE_NUMBER.sub("", text)
 
+        # --- Langkah 2.5: Hapus kop/running header dokumen yang berulang di tiap halaman ---
+        text = _RE_RUNNING_HEADER.sub("", text)
+
         # --- Langkah 3: Hapus karakter non-printable / artefak encoding ---
         # Karakter aneh yang sering muncul dari PDF hasil scan atau copy-paste
         text = _RE_NON_PRINTABLE.sub("", text)
@@ -483,7 +516,9 @@ class PDFProcessor:
                 if len(current_chunk) >= self.min_question_length:
                     questions.append(current_chunk.strip())
             else:
-                questions.append(cleaned_segment)
+                formatted_q = self.format_question_text(cleaned_segment)
+                if len(formatted_q) >= self.min_question_length:
+                    questions.append(formatted_q)
 
         logger.info(
             f"Segmentasi selesai. "

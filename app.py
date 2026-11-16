@@ -276,7 +276,8 @@ if analisis_clicked and uploaded_file is not None:
                 st.warning(f"  Batch {chunk_idx+1}: Seluruh rantai model Gemini gagal merespons.")
             
             # --- PROTEKSI HALUSINASI LLM & AKURASI ANOTASI ---
-            # Jika model melewatkan atau menghilangkan soal, pad dengan ERROR (proteksi halusinasi LLM)
+            # Batasi agar jumlah evaluasi tepat sesuai dengan jumlah soal pada chunk (anti-duplikasi)
+            batch_res = batch_res[:len(chunk)]
             while len(batch_res) < len(chunk):
                 batch_res.append({
                     "kategori": "ERROR",
@@ -285,12 +286,10 @@ if analisis_clicked and uploaded_file is not None:
                     "model_used": "System-Fallback"
                 })
                 
-            # PAKSA timpa teks soal dengan teks mentah ASLI dari PDF.
-            # Ini sangat krusial agar PyMuPDF di modul visual_annotator bisa
-            # menemukan koordinat anotasi secara presisi 100% tanpa gangguan modifikasi dari LLM.
+            # PAKSA timpa teks soal dengan teks mentah ASLI yang sudah dirapikan dari PDF.
+            # Ini menjamin 100% konsistensi urutan nomor soal dan presisi anotasi visual PyMuPDF.
             for i, res in enumerate(batch_res):
-                if i < len(chunk):
-                    res["question_text"] = chunk[i]
+                res["question_text"] = PDFProcessor.format_question_text(chunk[i])
                     
             evaluation_results.extend(batch_res)
             
@@ -350,7 +349,7 @@ if analisis_clicked and uploaded_file is not None:
     df_results = pd.DataFrame([
         {
             "No": idx + 1,
-            "Butir Soal": r.get("question_text", "").strip(),
+            "Butir Soal": PDFProcessor.format_question_text(r.get("question_text", "")).strip(),
             "KKO": r.get("kko", "—") if r.get("is_question", True) else "Bukan Soal",
             "Level": r.get("level", "—") if r.get("is_question", True) else "-",
             "Kategori": r.get("kategori", "ERROR") if r.get("is_question", True) else "N/A",
