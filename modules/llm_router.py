@@ -266,11 +266,11 @@ class CloudLLMRouter:
                         temperature=0.1,
                     )
 
-                    chat = self._gemini_client.chats.create(
+                    response = self._gemini_client.models.generate_content(
                         model=model_name,
+                        contents=batch_prompt,
                         config=generate_config,
                     )
-                    response = chat.send_message(batch_prompt)
 
                     raw_text = response.text if response.text else ""
                     parsed = self._parse_batch_response(raw_text, len(questions_chunk), model_name)

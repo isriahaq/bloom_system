@@ -57,16 +57,17 @@ GEMINI_API_KEY: str = _baca_gemini_api_key()
 # Sistem akan mencoba model secara berurutan dari atas ke bawah.
 # Jika terjadi error (429, 5xx, timeout) maka beban berpindah ke model berikutnya.
 GEMINI_MODELS: tuple[str, ...] = (
-    "gemini-2.0-flash",        # Prioritas 1 — Model utama Google Gemini (rilis resmi)
-    "gemini-1.5-flash",        # Prioritas 2 — Fallback kaskade pertama (stabil)
-    "gemini-1.5-flash-8b",     # Prioritas 3 — Fallback kaskade kedua (efisien, latensi rendah)
+    "gemini-3.7-flash",    # Prioritas 1 — kaskade rancangan skripsi
+    "gemini-3.6-flash",    # Prioritas 2 — kaskade rancangan skripsi
+    "gemini-3.5-flash",    # Prioritas 3 — kaskade rancangan skripsi
 )
 
 # Model Gemini default (digunakan sebagai referensi konfigurasi utama)
 GEMINI_MODEL_NAME: str = GEMINI_MODELS[0]
 
 # Batas waktu tunggu respons dari API Gemini (dalam detik)
-GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "60"))
+# Ditingkatkan ke 120 detik untuk mengakomodasi lonjakan latensi saat jam sibuk
+GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "120"))
 
 # Jumlah maksimal percobaan ulang pada satu model Gemini sebelum kaskade ke model berikutnya
 GEMINI_MAX_RETRIES: int = int(os.getenv("GEMINI_MAX_RETRIES", "3"))
