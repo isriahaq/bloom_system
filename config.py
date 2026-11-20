@@ -57,9 +57,9 @@ GEMINI_API_KEY: str = _baca_gemini_api_key()
 # Sistem akan mencoba model secara berurutan dari atas ke bawah.
 # Jika terjadi error (429, 5xx, timeout) maka beban berpindah ke model berikutnya.
 GEMINI_MODELS: tuple[str, ...] = (
-    "gemini-3.7-flash",    # Prioritas 1 — penalaran dan kuota tertinggi
-    "gemini-3.6-flash",    # Prioritas 2 — fallback kaskade pertama
-    "gemini-3.5-flash",    # Prioritas 3 — fallback kaskade kedua
+    "gemini-2.0-flash",        # Prioritas 1 — Model utama Google Gemini (rilis resmi)
+    "gemini-1.5-flash",        # Prioritas 2 — Fallback kaskade pertama (stabil)
+    "gemini-1.5-flash-8b",     # Prioritas 3 — Fallback kaskade kedua (efisien, latensi rendah)
 )
 
 # Model Gemini default (digunakan sebagai referensi konfigurasi utama)
